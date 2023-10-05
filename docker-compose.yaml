@@ -1,0 +1,32 @@
+services:
+  database:
+    image: mariadb:11.0
+    ports:
+      - 3306:3306
+    environment:
+      MARIADB_ROOT_PASSWORD: test
+      MARIADB_USER: service_user
+      MARIADB_PASSWORD: NotSoSecure
+      MARIADB_DATABASE: test_interviu
+  http:
+    build: .
+    links:
+      - database
+    volumes:
+      - ./:/app
+    ports:
+      - 8000:8000
+  http-test:
+    build: .
+    environment:
+      SKIP_AUTH: 1
+    command:
+      - pytest
+      - tests/
+      - -v
+    links:
+      - database
+    volumes:
+      - ./:/app
+    ports:
+      - 8000:8000
