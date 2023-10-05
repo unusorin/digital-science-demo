@@ -9,7 +9,7 @@ from jose import jwt
 from jose.constants import ALGORITHMS
 
 
-class UserService:
+class AccountService:
     _database_engine: Engine
 
     def __init__(self, database_engine: Engine):
@@ -19,50 +19,50 @@ class UserService:
         with Session(self._database_engine) as session:
             return session.scalars(select(models.Account).limit(limit).offset(offset)).all()
 
-    def get(self, user_id: int) -> models.Account:
+    def get(self, account_id: int) -> models.Account:
         with Session(self._database_engine) as session:
-            user = session.scalar(select(models.Account).where(models.Account.id == user_id))
-            if user == None:
+            account = session.scalar(select(models.Account).where(models.Account.id == account_id))
+            if account == None:
                 raise HTTPException(status_code=404, detail="User not found")
-            return user
+            return account
 
     def get_by_name(self, name: str) -> models.Account:
         with Session(self._database_engine) as session:
             return session.scalar(select(models.Account).where(models.Account.name == name))
 
-    def delete(self, user_id: int):
-        user = self.get(user_id)
+    def delete(self, account_id: int):
+        account = self.get(account_id)
         with Session(self._database_engine) as session:
-            session.delete(user)
+            session.delete(account)
             session.commit()
 
     def create(self, name: str):
-        user = models.Account(name=name)
+        account = models.Account(name=name)
         with Session(self._database_engine) as session:
-            session.add(user)
+            session.add(account)
             session.commit()
-            session.refresh(user)
-            return user
+            session.refresh(account)
+            return account
 
-    def update(self, user_id: int, name: str):
-        user = self.get(user_id)
-        user.name = name
+    def update(self, account_id: int, name: str):
+        account = self.get(account_id)
+        account.name = name
         with Session(self._database_engine) as session:
-            session.add(user)
+            session.add(account)
             session.commit()
         pass
 
-    def update_last_login(self, user: models.Account):
-        user.last_login_date = datetime.datetime.now()
+    def update_last_login(self, account: models.Account):
+        account.last_login_date = datetime.datetime.now()
 
         with Session(self._database_engine) as session:
-            session.add(user)
+            session.add(account)
             session.commit()
         pass
 
     def create_access_token(self, name: str) -> str:
         to_encode = {
-            "username": name
+            "name": name
         }
         encoded_jwt = jwt.encode(to_encode, sso.google_sso.client_secret.__str__(), algorithm=ALGORITHMS.HS256)
         return encoded_jwt
@@ -71,11 +71,11 @@ class UserService:
         if session_token is None:
             return None
         payload = jwt.decode(session_token, sso.google_sso.client_secret.__str__(), algorithms=[ALGORITHMS.HS256])
-        username: str = payload.get("username")
+        username: str = payload.get("name")
 
         if username is None:
             raise Exception("Token could not be validated")
-        return self.get_by_name(payload.get("username"))
+        return self.get_by_name(username)
 
 
-userService = UserService(database_engine)
+accountService = AccountService(database_engine)
